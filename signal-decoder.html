@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Case File #221B — The Vanishing Engineer</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#151b23;
+    --line:#2a333f;
+    --paper:#e8dcc0;
+    --amber:#e0a640;
+    --blue:#4fa3e0;
+    --red:#e05a4f;
+    --green:#5fbf7f;
+    --ink:#c9d1d9;
+    --dim:#6b7688;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 20% -10%, #1a2230 0%, transparent 45%),
+      var(--bg);
+    color:var(--ink);
+    font-family: 'Courier New', Consolas, monospace;
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+  .masthead{
+    border-bottom:2px solid var(--line);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+  }
+  .masthead h1{
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size:1.5rem;
+    letter-spacing:0.5px;
+    margin:0;
+    color:var(--paper);
+  }
+  .masthead .case-no{color:var(--dim); font-size:0.8rem;}
+  #clock{
+    font-family: Georgia, serif;
+    font-size:1.1rem;
+    color:var(--amber);
+    border:1px solid var(--line);
+    padding:6px 12px;
+    border-radius:3px;
+    background:var(--panel);
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px 22px;
+    margin-bottom:18px;
+  }
+  .story{font-family: Georgia, serif; line-height:1.65; font-size:1.02rem; color:var(--ink);}
+  .story p{margin:0 0 12px;}
+  .story p:last-child{margin-bottom:0;}
+
+  button{
+    font-family:inherit;
+    font-size:0.9rem;
+    background:#1c2531;
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  button:hover:not(:disabled){border-color:var(--amber); background:#232d3b;}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  button.primary{background:var(--amber); color:#1a1206; border-color:var(--amber); font-weight:bold;}
+  button.primary:hover:not(:disabled){background:#f0b658;}
+
+  .hidden{display:none !important;}
+
+  /* Stage tabs */
+  .tabs{display:flex; gap:8px; margin-bottom:18px;}
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 6px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:var(--dim);
+    font-size:0.78rem;
+    background:var(--panel);
+  }
+  .tab.active{color:var(--paper); border-color:var(--amber);}
+  .tab.done{color:var(--green); border-color:var(--green);}
+
+  /* LED player */
+  .signal-box{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    padding:26px 10px 18px;
+    background:#0a0e14;
+    border:1px solid var(--line);
+    border-radius:4px;
+    margin:14px 0 18px;
+  }
+  .leds{display:flex; gap:36px;}
+  .led-wrap{display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .led-label{font-size:0.68rem; letter-spacing:1px; color:var(--dim);}
+  .led{
+    width:54px; height:54px;
+    border-radius:50%;
+    background:#20262f;
+    border:2px solid #333c48;
+    transition: background-color .05s, box-shadow .05s;
+  }
+  .led.lit-blue{background:var(--blue); box-shadow:0 0 22px 6px rgba(79,163,224,0.75);}
+  .led.lit-red{background:var(--red); box-shadow:0 0 22px 6px rgba(224,90,79,0.75);}
+  .led.lit-amber{background:var(--amber); box-shadow:0 0 22px 6px rgba(224,166,64,0.75);}
+
+  .signal-controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;}
+  .slowmo-label{font-size:0.78rem; color:var(--dim); display:flex; align-items:center; gap:6px;}
+
+  .answer-options{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;}
+  @media (max-width:480px){.answer-options{grid-template-columns:1fr;}}
+  .opt{
+    text-align:left;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    background:#1c2531;
+  }
+  .opt.selected{border-color:var(--amber); background:#2a2210;}
+  .opt.correct{border-color:var(--green); background:#12251a; color:var(--green);}
+  .opt.wrong{border-color:var(--red); background:#2a1414; color:var(--red);}
+
+  .code-input{
+    display:flex; gap:10px; justify-content:center; margin-top:16px; align-items:center; flex-wrap:wrap;
+  }
+  .code-input input{
+    width:110px;
+    font-size:1.3rem;
+    text-align:center;
+    letter-spacing:3px;
+    background:#0a0e14;
+    border:1px solid var(--line);
+    color:var(--paper);
+    padding:10px;
+    border-radius:3px;
+    font-family:inherit;
+  }
+
+  .feedback{margin-top:12px; font-size:0.88rem; min-height:1.3em;}
+  .feedback.ok{color:var(--green);}
+  .feedback.bad{color:var(--red);}
+
+  .hint-row{margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .hint-text{font-size:0.85rem; color:var(--amber); letter-spacing:2px;}
+
+  .bottom-actions{display:flex; justify-content:space-between; margin-top:18px;}
+
+  .final-screen{text-align:center;}
+  .final-screen h2{color:var(--green); font-family:Georgia,serif;}
+  .stat-row{display:flex; justify-content:center; gap:28px; margin:18px 0; flex-wrap:wrap;}
+  .stat{text-align:center;}
+  .stat .num{font-size:1.6rem; color:var(--amber); font-family:Georgia,serif;}
+  .stat .lbl{font-size:0.72rem; color:var(--dim); letter-spacing:1px;}
+
+  .footnote{font-size:0.75rem; color:var(--dim); text-align:center; margin-top:24px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <h1>The Vanishing Engineer</h1>
+      <div class="case-no">CASE FILE #221B — TechNova Research Division</div>
+    </div>
+    <div id="clock">00:00</div>
+  </div>
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="card">
+    <div class="story">
+      <p>At 11:58 PM, Dr. Elena Vance — TechNova's lead robotics engineer — vanished from Lab 7.</p>
+      <p>The security cameras cut out at midnight. But the lab's old signal beacon kept transmitting light-pulses for six more minutes before it went dark too.</p>
+      <p>Your team has recovered the beacon's final broadcast. <strong>Decode the signal. Find the suspect. Find the scene. Crack the final code.</strong></p>
+      <p>Each stage flashes a light pattern. Every flash is either a <em>short pulse</em> (dot) or a <em>long pulse</em> (dash) — decode them with your Morse cheat sheet.</p>
+      <p>The clock starts the moment you begin.</p>
+    </div>
+    <div style="text-align:center; margin-top:18px;">
+      <button class="primary" onclick="beginInvestigation()">Begin Investigation</button>
+    </div>
+  </div>
+
+  <!-- MAIN GAME -->
+  <div id="screen-game" class="hidden">
+    <div class="tabs">
+      <div class="tab" id="tab-1">Stage 1 · Suspect</div>
+      <div class="tab" id="tab-2">Stage 2 · Scene</div>
+      <div class="tab" id="tab-3">Stage 3 · Vault Code</div>
+    </div>
+
+    <!-- STAGE 1 -->
+    <div id="stage-1" class="card">
+      <div class="story">
+        <p>The beacon's first burst names a name. Four people were in the building that night. Watch the light, write down every dot and dash, then pick your suspect.</p>
+      </div>
+      <div class="signal-box">
+        <div class="leds">
+          <div class="led-wrap">
+            <div class="led" id="led1"></div>
+            <div class="led-label">SIGNAL</div>
+          </div>
+        </div>
+        <div class="signal-controls">
+          <button onclick="playStage(1)" id="play1">▶ Play Signal</button>
+          <label class="slowmo-label"><input type="checkbox" id="slowmo1"> Slow motion</label>
+        </div>
+      </div>
+      <div class="answer-options" id="opts1"></div>
+      <div class="feedback" id="fb1"></div>
+      <div class="hint-row">
+        <button onclick="giveHint(1)">Request Hint (−5 pts)</button>
+        <span class="hint-text" id="hint1"></span>
+      </div>
+    </div>
+
+    <!-- STAGE 2 -->
+    <div id="stage-2" class="card hidden">
+      <div class="story">
+        <p>This time the beacon is fighting interference — a second, fake signal is bleeding into the transmission. The real signal glows <strong style="color:var(--blue)">BLUE</strong>. A jammed decoy glows <strong style="color:var(--red)">RED</strong>. Decode only the blue.</p>
+      </div>
+      <div class="signal-box">
+        <div class="leds">
+          <div class="led-wrap">
+            <div class="led" id="led2blue"></div>
+            <div class="led-label" style="color:var(--blue)">REAL</div>
+          </div>
+          <div class="led-wrap">
+            <div class="led" id="led2red"></div>
+            <div class="led-label" style="color:var(--red)">JAMMED</div>
+          </div>
+        </div>
+        <div class="signal-controls">
+          <button onclick="playStage(2)" id="play2">▶ Play Signal</button>
+          <label class="slowmo-label"><input type="checkbox" id="slowmo2"> Slow motion</label>
+        </div>
+      </div>
+      <div class="answer-options" id="opts2"></div>
+      <div class="feedback" id="fb2"></div>
+      <div class="hint-row">
+        <button onclick="giveHint(2)">Request Hint (−5 pts)</button>
+        <span class="hint-text" id="hint2"></span>
+      </div>
+    </div>
+
+    <!-- STAGE 3 -->
+    <div id="stage-3" class="card hidden">
+      <div class="story">
+        <p>The Vault is sealed behind a 4-digit code. The beacon's final burst — sent seconds before it died — is a number sequence. Decode it to unlock the case.</p>
+      </div>
+      <div class="signal-box">
+        <div class="leds">
+          <div class="led-wrap">
+            <div class="led" id="led3"></div>
+            <div class="led-label">SIGNAL</div>
+          </div>
+        </div>
+        <div class="signal-controls">
+          <button onclick="playStage(3)" id="play3">▶ Play Signal</button>
+          <label class="slowmo-label"><input type="checkbox" id="slowmo3"> Slow motion</label>
+        </div>
+      </div>
+      <div class="code-input">
+        <input type="text" id="codeInput" maxlength="4" placeholder="????">
+        <button class="primary" onclick="checkStage3()">Unlock</button>
+      </div>
+      <div class="feedback" id="fb3" style="text-align:center;"></div>
+      <div class="hint-row" style="justify-content:center;">
+        <button onclick="giveHint(3)">Request Hint (−5 pts)</button>
+        <span class="hint-text" id="hint3"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL -->
+  <div id="screen-final" class="card final-screen hidden">
+    <h2>CASE CLOSED</h2>
+    <div class="story" style="text-align:left;">
+      <p>At 11:58 PM, Dr. Priya Holt led Dr. Vance into the Server Vault and sealed it behind code <strong>7291</strong> — trying to steal six months of unpublished research before slipping out toward the loading dock. Security caught her at the east gate twenty minutes later.</p>
+      <p>Case closed, Detective.</p>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="num" id="finalTime">--:--</div><div class="lbl">TOTAL TIME</div></div>
+      <div class="stat"><div class="num" id="finalHints">0</div><div class="lbl">HINTS USED</div></div>
+      <div class="stat"><div class="num" id="finalAttempts">0</div><div class="lbl">WRONG GUESSES</div></div>
+    </div>
+    <p style="color:var(--dim); font-size:0.85rem;">Report these numbers to your facilitator for scoring.</p>
+  </div>
+
+  <div class="footnote">Engineer's Gauntlet — Signal Decoder · Case #221B</div>
+</div>
+
+<script>
+const MORSE = {
+  A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',
+  K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',
+  U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+  '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'
+};
+
+const UNIT = 260; // ms, duration of a "dot"
+
+function buildPulses(word){
+  const pulses = [];
+  const letters = word.split('');
+  letters.forEach((ch, li) => {
+    const code = MORSE[ch];
+    if(!code) return;
+    code.split('').forEach((sym, si) => {
+      pulses.push({on:true, dur: sym === '.' ? UNIT : UNIT*3});
+      if(si < code.length-1) pulses.push({on:false, dur: UNIT});
+    });
+    if(li < letters.length-1) pulses.push({on:false, dur: UNIT*3});
+  });
+  return pulses;
+}
+
+// Answers
+const STAGE1_ANSWER = 'HOLT';
+const STAGE2_ANSWER = 'VAULT';
+const STAGE2_DECOY  = 'DOCKS';
+const STAGE3_ANSWER = '7291';
+
+const STAGE1_OPTS = [
+  {id:'HOLT', label:'Dr. Priya Holt — Rival Researcher'},
+  {id:'MARLOWE', label:'Adrian Marlowe — Night Security'},
+  {id:'KESTREL', label:'Nina Kestrel — Investor'},
+  {id:'REYES', label:'Sam Reyes — Lab Assistant'}
+];
+const STAGE2_OPTS = [
+  {id:'ROOFTOP', label:'The Rooftop Garden'},
+  {id:'VAULT', label:'The Server Vault'},
+  {id:'DOCKS', label:'The Loading Docks'},
+  {id:'ARCHIVE', label:'The East Archive'}
+];
+
+let timerStart = null, timerInterval = null;
+let hintCount = 0, wrongCount = 0;
+let stage1Solved = false, stage2Solved = false;
+
+function beginInvestigation(){
+  document.getElementById('screen-intro').classList.add('hidden');
+  document.getElementById('screen-game').classList.remove('hidden');
+  document.getElementById('tab-1').classList.add('active');
+  timerStart = Date.now();
+  timerInterval = setInterval(updateClock, 250);
+  renderOptions('opts1', STAGE1_OPTS, 1);
+  renderOptions('opts2', STAGE2_OPTS, 2);
+}
+
+function updateClock(){
+  const secs = Math.floor((Date.now()-timerStart)/1000);
+  const m = String(Math.floor(secs/60)).padStart(2,'0');
+  const s = String(secs%60).padStart(2,'0');
+  document.getElementById('clock').textContent = `${m}:${s}`;
+}
+
+function renderOptions(containerId, opts, stage){
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = o.label;
+    btn.onclick = () => selectOption(stage, o.id, btn, containerId);
+    c.appendChild(btn);
+  });
+}
+
+function selectOption(stage, id, btn, containerId){
+  const answer = stage === 1 ? STAGE1_ANSWER : STAGE2_ANSWER;
+  const container = document.getElementById(containerId);
+  [...container.children].forEach(b => b.classList.remove('selected'));
+  if(id === answer){
+    btn.classList.add('correct');
+    [...container.children].forEach(b => b.disabled = true);
+    document.getElementById('fb'+stage).textContent = 'Correct. Signal confirmed.';
+    document.getElementById('fb'+stage).className = 'feedback ok';
+    if(stage === 1){ stage1Solved = true; revealNarrative1(); advanceTab(1); }
+    if(stage === 2){ stage2Solved = true; revealNarrative2(); advanceTab(2); }
+  } else {
+    btn.classList.add('wrong');
+    wrongCount++;
+    document.getElementById('fb'+stage).textContent = 'Not a match — replay the signal and check your dots/dashes.';
+    document.getElementById('fb'+stage).className = 'feedback bad';
+    setTimeout(()=>btn.classList.remove('wrong'), 900);
+  }
+}
+
+function revealNarrative1(){
+  const p = document.createElement('p');
+  p.innerHTML = '<em>Correct. Security logs confirm Dr. Holt swiped her badge at 11:52 PM — six minutes before the cameras died.</em>';
+  document.querySelector('#stage-1 .story').appendChild(p);
+}
+function revealNarrative2(){
+  const p = document.createElement('p');
+  p.innerHTML = "<em>Correct. Dr. Holt's badge accessed the Server Vault at 11:56 PM — the last place anyone saw Dr. Vance's coat.</em>";
+  document.querySelector('#stage-2 .story').appendChild(p);
+}
+
+function advanceTab(fromStage){
+  document.getElementById('tab-'+fromStage).classList.remove('active');
+  document.getElementById('tab-'+fromStage).classList.add('done');
+  const next = fromStage+1;
+  document.getElementById('tab-'+next).classList.add('active');
+  document.getElementById('stage-'+fromStage).classList.add('hidden');
+  document.getElementById('stage-'+next).classList.remove('hidden');
+}
+
+function playStage(stage){
+  if(stage === 1){
+    playSingle('led1', buildPulses(STAGE1_ANSWER), 'play1', 'slowmo1', 'lit-amber');
+  } else if(stage === 2){
+    playDual();
+  } else if(stage === 3){
+    playSingle('led3', buildPulses(STAGE3_ANSWER), 'play3', 'slowmo3', 'lit-amber');
+  }
+}
+
+function playSingle(ledId, pulses, btnId, slowmoId, colorClass){
+  const led = document.getElementById(ledId);
+  const btn = document.getElementById(btnId);
+  const slow = document.getElementById(slowmoId).checked ? 1.7 : 1;
+  btn.disabled = true;
+  let i = 0;
+  function step(){
+    if(i >= pulses.length){ led.className='led'; btn.disabled=false; return; }
+    const p = pulses[i];
+    led.className = 'led' + (p.on ? ' '+colorClass : '');
+    setTimeout(()=>{ i++; step(); }, p.dur * slow);
+  }
+  step();
+}
+
+function playDual(){
+  const ledB = document.getElementById('led2blue');
+  const ledR = document.getElementById('led2red');
+  const btn = document.getElementById('play2');
+  const slow = document.getElementById('slowmo2').checked ? 1.7 : 1;
+  const bluePulses = buildPulses(STAGE2_ANSWER);
+  const redPulses = buildPulses(STAGE2_DECOY);
+  btn.disabled = true;
+  let doneCount = 0;
+  function runTrack(led, pulses, colorClass){
+    let i = 0;
+    function step(){
+      if(i >= pulses.length){ led.className='led'; doneCount++; if(doneCount===2) btn.disabled=false; return; }
+      const p = pulses[i];
+      led.className = 'led' + (p.on ? ' '+colorClass : '');
+      setTimeout(()=>{ i++; step(); }, p.dur * slow);
+    }
+    step();
+  }
+  runTrack(ledB, bluePulses, 'lit-blue');
+  runTrack(ledR, redPulses, 'lit-red');
+}
+
+function checkStage3(){
+  const val = document.getElementById('codeInput').value.trim();
+  if(val === STAGE3_ANSWER){
+    document.getElementById('fb3').textContent = 'Vault unlocked.';
+    document.getElementById('fb3').className = 'feedback ok';
+    document.getElementById('tab-3').classList.remove('active');
+    document.getElementById('tab-3').classList.add('done');
+    clearInterval(timerInterval);
+    setTimeout(showFinal, 700);
+  } else {
+    wrongCount++;
+    document.getElementById('fb3').textContent = 'Incorrect code — recheck the numeric signal.';
+    document.getElementById('fb3').className = 'feedback bad';
+  }
+}
+
+function showFinal(){
+  document.getElementById('screen-game').classList.add('hidden');
+  document.getElementById('screen-final').classList.remove('hidden');
+  document.getElementById('finalTime').textContent = document.getElementById('clock').textContent;
+  document.getElementById('finalHints').textContent = hintCount;
+  document.getElementById('finalAttempts').textContent = wrongCount;
+}
+
+const HINT_WORDS = {1: STAGE1_ANSWER, 2: STAGE2_ANSWER, 3: STAGE3_ANSWER};
+const hintLevels = {1:0, 2:0, 3:0};
+function giveHint(stage){
+  const word = HINT_WORDS[stage];
+  hintLevels[stage] = Math.min(hintLevels[stage]+1, word.length);
+  hintCount++;
+  const revealed = word.split('').map((ch,idx) => idx < hintLevels[stage] ? ch : '_').join(' ');
+  document.getElementById('hint'+stage).textContent = revealed;
+}
+</script>
+</body>
+</html>
