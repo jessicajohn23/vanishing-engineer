@@ -293,10 +293,7 @@
   <!-- FINAL -->
   <div id="screen-final" class="card final-screen hidden">
     <h2>CASE CLOSED</h2>
-    <div class="story" style="text-align:left;">
-      <p>At 11:58 PM, Dr. Priya Holt led Dr. Vance into the Server Vault and sealed it behind code <strong>7291</strong> — trying to steal six months of unpublished research before slipping out toward the loading dock. Security caught her at the east gate twenty minutes later.</p>
-      <p>Case closed, Detective.</p>
-    </div>
+    <div class="story" style="text-align:left;" id="finalStory"></div>
     <div class="stat-row">
       <div class="stat"><div class="num" id="finalTime">--:--</div><div class="lbl">TOTAL TIME</div></div>
       <div class="stat"><div class="num" id="finalHints">0</div><div class="lbl">HINTS USED</div></div>
@@ -309,35 +306,32 @@
 </div>
 
 <script>
-const MORSE = {
-  A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',
-  K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',
-  U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
-  '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'
-};
+// Pre-rendered light-pulse sequences (dot = 260ms on, dash = 780ms on).
+// These are generated offline from the case solution — the underlying
+// words are intentionally NOT present anywhere in this file.
+const STAGE1_PULSES = [{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:780}];
+const STAGE2_PULSES = [{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:780}];
+const STAGE2_DECOY_PULSES = [{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260}];
+const STAGE3_PULSES = [{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:780},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:260},{on:false,dur:780},{on:true,dur:260},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780},{on:false,dur:260},{on:true,dur:780}];
 
-const UNIT = 260; // ms, duration of a "dot"
-
-function buildPulses(word){
-  const pulses = [];
-  const letters = word.split('');
-  letters.forEach((ch, li) => {
-    const code = MORSE[ch];
-    if(!code) return;
-    code.split('').forEach((sym, si) => {
-      pulses.push({on:true, dur: sym === '.' ? UNIT : UNIT*3});
-      if(si < code.length-1) pulses.push({on:false, dur: UNIT});
-    });
-    if(li < letters.length-1) pulses.push({on:false, dur: UNIT*3});
-  });
-  return pulses;
+// Non-reversible-at-a-glance check: a guess is scored by hashing it and
+// comparing to a pre-computed target hash, so the plaintext answer is
+// never stored in this file.
+function simpleHash(str){
+  let h = 5381;
+  for(let i=0;i<str.length;i++){
+    h = ((h << 5) + h) + str.charCodeAt(i);
+    h = h & 0xFFFFFFFF;
+  }
+  return (h >>> 0).toString(16);
 }
+const STAGE1_TARGET_HASH = '7c85e4fc';
+const STAGE2_TARGET_HASH = 'e3853d1';
+const STAGE3_TARGET_HASH = '7c7c1498';
 
-// Answers
-const STAGE1_ANSWER = 'HOLT';
-const STAGE2_ANSWER = 'VAULT';
-const STAGE2_DECOY  = 'DOCKS';
-const STAGE3_ANSWER = '7291';
+// Hint text, base64-wrapped so it doesn't show up as a plain readable
+// string in the page source. Only decoded in-memory when a hint is requested.
+const HINT_B64 = {1:'SE9MVA==', 2:'VkFVTFQ=', 3:'NzI5MQ=='};
 
 const STAGE1_OPTS = [
   {id:'HOLT', label:'Dr. Priya Holt — Rival Researcher'},
@@ -386,10 +380,10 @@ function renderOptions(containerId, opts, stage){
 }
 
 function selectOption(stage, id, btn, containerId){
-  const answer = stage === 1 ? STAGE1_ANSWER : STAGE2_ANSWER;
+  const targetHash = stage === 1 ? STAGE1_TARGET_HASH : STAGE2_TARGET_HASH;
   const container = document.getElementById(containerId);
   [...container.children].forEach(b => b.classList.remove('selected'));
-  if(id === answer){
+  if(simpleHash(id) === targetHash){
     btn.classList.add('correct');
     [...container.children].forEach(b => b.disabled = true);
     document.getElementById('fb'+stage).textContent = 'Correct. Signal confirmed.';
@@ -407,12 +401,14 @@ function selectOption(stage, id, btn, containerId){
 
 function revealNarrative1(){
   const p = document.createElement('p');
-  p.innerHTML = '<em>Correct. Security logs confirm Dr. Holt swiped her badge at 11:52 PM — six minutes before the cameras died.</em>';
+  const text = atob('Q29ycmVjdC4gU2VjdXJpdHkgbG9ncyBjb25maXJtIERyLiBIb2x0IHN3aXBlZCBoZXIgYmFkZ2UgYXQgMTE6NTIgUE0g4oCUIHNpeCBtaW51dGVzIGJlZm9yZSB0aGUgY2FtZXJhcyBkaWVkLg==');
+  p.innerHTML = `<em>${text}</em>`;
   document.querySelector('#stage-1 .story').appendChild(p);
 }
 function revealNarrative2(){
   const p = document.createElement('p');
-  p.innerHTML = "<em>Correct. Dr. Holt's badge accessed the Server Vault at 11:56 PM — the last place anyone saw Dr. Vance's coat.</em>";
+  const text = atob('Q29ycmVjdC4gRHIuIEhvbHQncyBiYWRnZSBhY2Nlc3NlZCB0aGUgU2VydmVyIFZhdWx0IGF0IDExOjU2IFBNIOKAlCB0aGUgbGFzdCBwbGFjZSBhbnlvbmUgc2F3IERyLiBWYW5jZSdzIGNvYXQu');
+  p.innerHTML = `<em>${text}</em>`;
   document.querySelector('#stage-2 .story').appendChild(p);
 }
 
@@ -427,11 +423,11 @@ function advanceTab(fromStage){
 
 function playStage(stage){
   if(stage === 1){
-    playSingle('led1', buildPulses(STAGE1_ANSWER), 'play1', 'slowmo1', 'lit-amber');
+    playSingle('led1', STAGE1_PULSES, 'play1', 'slowmo1', 'lit-amber');
   } else if(stage === 2){
     playDual();
   } else if(stage === 3){
-    playSingle('led3', buildPulses(STAGE3_ANSWER), 'play3', 'slowmo3', 'lit-amber');
+    playSingle('led3', STAGE3_PULSES, 'play3', 'slowmo3', 'lit-amber');
   }
 }
 
@@ -455,8 +451,8 @@ function playDual(){
   const ledR = document.getElementById('led2red');
   const btn = document.getElementById('play2');
   const slow = document.getElementById('slowmo2').checked ? 1.7 : 1;
-  const bluePulses = buildPulses(STAGE2_ANSWER);
-  const redPulses = buildPulses(STAGE2_DECOY);
+  const bluePulses = STAGE2_PULSES;
+  const redPulses = STAGE2_DECOY_PULSES;
   btn.disabled = true;
   let doneCount = 0;
   function runTrack(led, pulses, colorClass){
@@ -475,7 +471,7 @@ function playDual(){
 
 function checkStage3(){
   const val = document.getElementById('codeInput').value.trim();
-  if(val === STAGE3_ANSWER){
+  if(simpleHash(val) === STAGE3_TARGET_HASH){
     document.getElementById('fb3').textContent = 'Vault unlocked.';
     document.getElementById('fb3').className = 'feedback ok';
     document.getElementById('tab-3').classList.remove('active');
@@ -495,12 +491,20 @@ function showFinal(){
   document.getElementById('finalTime').textContent = document.getElementById('clock').textContent;
   document.getElementById('finalHints').textContent = hintCount;
   document.getElementById('finalAttempts').textContent = wrongCount;
+
+  // Reveal text is assembled from encoded fragments only once the case is
+  // actually solved, so it never sits in the page as readable plaintext.
+  const name = atob('RHIuIFByaXlhIEhvbHQ=');
+  const location = atob('dGhlIFNlcnZlciBWYXVsdA==');
+  const code = atob('NzI5MQ==');
+  document.getElementById('finalStory').innerHTML =
+    `<p>At 11:58 PM, ${name} led Dr. Vance into ${location} and sealed it behind code <strong>${code}</strong> — trying to steal six months of unpublished research before slipping out toward the loading dock. Security caught her at the east gate twenty minutes later.</p>
+     <p>Case closed, Detective.</p>`;
 }
 
-const HINT_WORDS = {1: STAGE1_ANSWER, 2: STAGE2_ANSWER, 3: STAGE3_ANSWER};
 const hintLevels = {1:0, 2:0, 3:0};
 function giveHint(stage){
-  const word = HINT_WORDS[stage];
+  const word = atob(HINT_B64[stage]);
   hintLevels[stage] = Math.min(hintLevels[stage]+1, word.length);
   hintCount++;
   const revealed = word.split('').map((ch,idx) => idx < hintLevels[stage] ? ch : '_').join(' ');
